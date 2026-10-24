@@ -3,8 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>notlms - never miss an LMS deadline</title>
-<meta name="description" content="A free, open-source app that runs on your own computer and reminds you about unsubmitted Moodle LMS tasks. No server, no tracking.">
+<title>notlms: NUST LMS deadline reminder app (free, open source)</title>
+<meta name="description" content="Free desktop app that reminds you about unsubmitted assignments and quizzes on NUST LMS (lms.nust.edu.pk) and other Moodle sites. Section-aware, private, runs on your laptop. Windows, macOS, Linux.">
+<meta name="keywords" content="NUST LMS, NUST LMS reminder, lms.nust.edu.pk, Moodle deadline reminder, assignment reminder app, LMS notifications, NUST assignment deadline, Moodle desktop notifications">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="notlms contributors">
+<link rel="canonical" href="https://murtaza335.github.io/notlms/">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="notlms">
+<meta property="og:title" content="notlms: NUST LMS deadline reminder app">
+<meta property="og:description" content="Free, open-source desktop reminders for unsubmitted NUST LMS (Moodle) tasks. Only your section's deadlines. Runs on your laptop, no server, no tracking.">
+<meta property="og:url" content="https://murtaza335.github.io/notlms/">
+<meta property="og:image" content="https://murtaza335.github.io/notlms/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="notlms: NUST LMS deadline reminder app">
+<meta name="twitter:description" content="Free, open-source desktop reminders for unsubmitted NUST LMS (Moodle) tasks.">
+<meta name="twitter:image" content="https://murtaza335.github.io/notlms/og-image.png">
+<meta name="theme-color" content="#2f6fed">
 <style>
   :root {
     --bg: #f6f7f9; --card: #fff; --text: #1b1f24; --muted: #596273; --line: #e3e6ea;
@@ -60,6 +78,7 @@
   [hidden] { display: none !important; }
   @media (max-width: 520px) { td:nth-child(2), th:nth-child(2) { display: none; } }
 </style>
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "notlms", "alternateName": "NUST LMS deadline reminder", "description": "Free, open-source desktop app that reminds students about unsubmitted assignments and quizzes on NUST LMS and other Moodle sites. Runs locally with no server.", "applicationCategory": "EducationalApplication", "operatingSystem": "Windows, macOS, Linux", "url": "https://murtaza335.github.io/notlms/", "image": "https://murtaza335.github.io/notlms/og-image.png", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "license": "https://opensource.org/licenses/MIT", "codeRepository": "https://github.com/murtaza335/notlms", "isAccessibleForFree": true}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does it work with my university?", "acceptedAnswer": {"@type": "Answer", "text": "It's built for NUST's LMS but uses the standard Moodle mobile API, so other Moodle sites that allow mobile app login should work: enter their address on the login page. Sites that only offer single sign-on (no username and password on the login form) aren't supported yet."}}, {"@type": "Question", "name": "Can it submit my assignments or read my grades?", "acceptedAnswer": {"@type": "Answer", "text": "No. It only reads the list of tasks that still need action."}}, {"@type": "Question", "name": "Why no reminders when my laptop is off or asleep?", "acceptedAnswer": {"@type": "Answer", "text": "Everything runs on your computer, and there's deliberately no server to do it for you. After it wakes, the next check shows what you missed."}}, {"@type": "Question", "name": "Is the NUST LMS reminder app safe? It says unsigned.", "acceptedAnswer": {"@type": "Answer", "text": "Unsigned means we haven't paid for a publisher certificate, not that it's unsafe. Your password is sent only to your LMS, the code is open source, and downloads carry checksums and build attestations. You can also run it from source."}}, {"@type": "Question", "name": "Does it only remind me about my own section?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. You set your section letter once, and deadlines tagged for other sections are hidden. You can also hide any task manually or hide anything containing words you choose."}}]}]</script>
 </head>
 <body>
 <div class="wrap">
@@ -72,9 +91,9 @@
   </nav>
 
   <header class="hero">
-    <h1>Never miss an LMS deadline again.</h1>
-    <p class="lead">notlms runs on your own computer, checks your Moodle LMS for tasks you haven't submitted,
-      and pops up a desktop reminder before they're due. Free and open source. No account, no server, no tracking.</p>
+    <h1>Never miss a NUST LMS deadline again.</h1>
+    <p class="lead">notlms is a free reminder app for <strong>NUST LMS</strong> (lms.nust.edu.pk) and other Moodle sites. It runs on your own computer,
+      checks for assignments and quizzes you haven't submitted, and pops up a desktop reminder before they're due. Free and open source. No account, no server, no tracking.</p>
     <div class="cta">
       <a class="btn" id="hero-btn" href="#download" aria-disabled="true">Download</a>
       <span class="muted" id="hero-note">Looking up the latest version...</span>
@@ -100,6 +119,15 @@
     <p class="note" style="margin-top:16px"><strong>First launch warning is expected.</strong> The app isn't code-signed yet
       (signing costs money, and this is a free student project), so Windows and macOS will warn you about an
       "unknown developer". The steps below show how to open it. Because the code is public, you can read it or build it yourself.</p>
+  </section>
+
+  <section id="why">
+    <h2>Built for NUST LMS and Moodle</h2>
+    <div class="grid">
+      <div class="card"><h3 style="margin-top:0">Assignment and quiz reminders</h3><p class="muted" style="margin:0">Desktop notifications when a task appears and again 72, 24, 6 and 1 hours before the deadline.</p></div>
+      <div class="card"><h3 style="margin-top:0">Only your section</h3><p class="muted" style="margin:0">Combined courses post one submission link per section. notlms shows and reminds you about your section's only.</p></div>
+      <div class="card"><h3 style="margin-top:0">A clear pending list</h3><p class="muted" style="margin:0">One dashboard with course name, deadline and time left, so you don't have to open every course page.</p></div>
+    </div>
   </section>
 
   <section id="how">
@@ -181,18 +209,13 @@ certutil -hashfile notlms-windows-x64.exe SHA256   # Windows, compare by eye</pr
 
   <section id="faq">
     <h2>FAQ</h2>
-    <details><summary>Does it work with my university?</summary><p>It's built for NUST's LMS but uses the standard Moodle mobile API, so
-      other Moodle sites that allow mobile app login should work: enter their address on the login page. Sites that only offer single sign-on
-      (no username and password on the login form) aren't supported yet.</p></details>
+    <details><summary>Does it work with my university?</summary><p>It's built for NUST's LMS but uses the standard Moodle mobile API, so other Moodle sites that allow mobile app login should work: enter their address on the login page. Sites that only offer single sign-on (no username and password on the login form) aren't supported yet.</p></details>
     <details><summary>Can it submit my assignments or read my grades?</summary><p>No. It only reads the list of tasks that still need action.</p></details>
-    <details><summary>Why no reminders when my laptop is off or asleep?</summary><p>Everything runs on your computer, and there's deliberately no server
-      to do it for you. After it wakes, the next check shows what you missed.</p></details>
-    <details><summary>The app is "unsigned". Is it safe?</summary><p>Unsigned means we haven't paid for a publisher certificate, not that
-      it's unsafe. You can read the source, verify the download was built from it, or run from source.</p></details>
-    <details><summary>How do I uninstall it?</summary><p>Click "Forget everything and log out" in the app, delete the downloaded file, and delete the
-      <code>notlms</code> folder in your user data directory (see the privacy section). Nothing else is installed on your system.</p></details>
-    <details><summary>Something broke. Where do I report it?</summary><p>Open an issue on <a id="issues-link" href="#">GitHub</a>. For security problems use the private
-      "Report a vulnerability" option instead.</p></details>
+    <details><summary>Why no reminders when my laptop is off or asleep?</summary><p>Everything runs on your computer, and there's deliberately no server to do it for you. After it wakes, the next check shows what you missed.</p></details>
+    <details><summary>Is the NUST LMS reminder app safe? It says unsigned.</summary><p>Unsigned means we haven't paid for a publisher certificate, not that it's unsafe. Your password is sent only to your LMS, the code is open source, and downloads carry checksums and build attestations. You can also run it from source.</p></details>
+    <details><summary>Does it only remind me about my own section?</summary><p>Yes. You set your section letter once, and deadlines tagged for other sections are hidden. You can also hide any task manually or hide anything containing words you choose.</p></details>
+    <details><summary>How do I uninstall it?</summary><p>Click "Forget everything and log out" in the app, delete the downloaded file, and delete the notlms folder in your user data directory (see the privacy section). Nothing else is installed on your system.</p></details>
+    <details><summary>Something broke. Where do I report it?</summary><p>Open an issue on <a id="issues-link" href="#">GitHub</a>. For security problems use the private "Report a vulnerability" option instead.</p></details>
   </section>
 
   <footer>
