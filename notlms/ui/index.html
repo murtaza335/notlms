@@ -71,8 +71,9 @@
         <input type="text" id="username" autocomplete="username">
         <label for="password">Password</label>
         <input type="password" id="password" autocomplete="current-password">
-        <label for="section">Your section (optional, e.g. B)</label>
-        <input type="text" id="section" maxlength="8">
+        <label for="section">Your section letter (e.g. B). Deadlines for other sections are hidden.</label>
+        <input type="text" id="section" maxlength="20">
+        <div class="chk"><input type="checkbox" id="no_sections"><label for="no_sections" style="margin:0">My courses don't use sections</label></div>
         <div class="row"><button class="primary" type="submit" id="login-btn">Log in</button></div>
       </form>
     </div>
@@ -89,8 +90,11 @@
 
     <div class="card">
       <h2>Settings</h2>
-      <label for="s-section">Section</label>
-      <input type="text" id="s-section" maxlength="8">
+      <label for="s-section">Section letter (other sections' deadlines are hidden)</label>
+      <input type="text" id="s-section" maxlength="20">
+      <div class="chk"><input type="checkbox" id="s-nosec"><label for="s-nosec" style="margin:0">My courses don't use sections</label></div>
+      <label for="s-ignore">Always hide tasks containing these words (comma-separated, optional)</label>
+      <input type="text" id="s-ignore" placeholder="e.g. practice, optional, sec_D">
       <label for="s-hours">Remind me this many hours before the deadline (comma-separated)</label>
       <input type="text" id="s-hours">
       <label for="s-poll">Check the LMS every (minutes)</label>
@@ -101,6 +105,11 @@
         <button id="test-btn">Send test notification</button>
         <span id="settings-msg" class="muted"></span>
       </div>
+    </div>
+
+    <div class="card" id="hidden-card" hidden>
+      <h2>Hidden tasks</h2>
+      <div id="hidden-list"></div>
     </div>
 
     <div class="card">
@@ -159,11 +168,27 @@
       const meta = document.createElement("div"); meta.className = "muted"; meta.textContent = t.course + " · due " + t.due_text;
       left.append(a, meta);
       const badge = document.createElement("span"); badge.className = "badge" + (t.overdue ? " overdue" : ""); badge.textContent = t.left_text;
-      row.append(left, badge); box.append(row);
+      const hide = document.createElement("button"); hide.textContent = "Hide"; hide.title = "Hide this task (e.g. it isn't for my section)";
+      hide.addEventListener("click", async () => { await api("/api/hide", { cmid: t.cmid, name: t.name, hidden: true }).catch((e) => showError(e.message)); setTimeout(refresh, 600); });
+      const right = document.createElement("div"); right.style.cssText = "display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end";
+      right.append(badge, hide);
+      row.append(left, right); box.append(row);
+    }
+
+    $("hidden-card").hidden = !s.hidden.length;
+    const hl = $("hidden-list"); hl.replaceChildren();
+    for (const h of s.hidden) {
+      const row = document.createElement("div"); row.className = "task";
+      const nm = document.createElement("span"); nm.textContent = h.name || ("Task " + h.cmid);
+      const un = document.createElement("button"); un.textContent = "Unhide";
+      un.addEventListener("click", async () => { await api("/api/hide", { cmid: h.cmid, hidden: false }).catch((e) => showError(e.message)); setTimeout(refresh, 600); });
+      row.append(nm, un); hl.append(row);
     }
 
     if (!settingsFilled) {
       $("s-section").value = s.settings.section;
+      $("s-nosec").checked = s.settings.no_sections;
+      $("s-ignore").value = s.settings.ignore_words.join(", ");
       $("s-hours").value = s.settings.remind_hours.join(", ");
       $("s-poll").value = s.settings.poll_minutes;
       $("s-desktop").checked = s.settings.desktop_notifications;
@@ -181,7 +206,7 @@
     const btn = $("login-btn"); btn.disabled = true; btn.textContent = "Logging in...";
     try {
       await api("/api/login", { lms_url: $("lms_url").value, username: $("username").value,
-                                 password: $("password").value, section: $("section").value });
+                                 password: $("password").value, section: $("section").value, no_sections: $("no_sections").checked });
       $("password").value = "";
       showError("");
       await refresh();
@@ -194,7 +219,8 @@
   $("save-btn").addEventListener("click", async () => {
     const hours = $("s-hours").value.split(",").map((x) => parseInt(x, 10)).filter((x) => x > 0);
     try {
-      await api("/api/settings", { section: $("s-section").value, remind_hours: hours,
+      await api("/api/settings", { section: $("s-section").value, no_sections: $("s-nosec").checked,
+        ignore_words: $("s-ignore").value.split(",").map((x) => x.trim()).filter(Boolean), remind_hours: hours,
         poll_minutes: parseInt($("s-poll").value, 10) || 30, desktop_notifications: $("s-desktop").checked });
       $("settings-msg").textContent = "Saved."; setTimeout(() => ($("settings-msg").textContent = ""), 2500);
       setTimeout(refresh, 800);

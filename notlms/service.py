@@ -62,7 +62,15 @@ class Service:
                 now = time.time()
                 client = MoodleClient(cfg.lms_url, legacy_tls=cfg.legacy_tls)
                 client.token = cfg.token
+                if cfg.needs_section:
+                    self.snapshot.tasks = []
+                    self.snapshot.error = "Set your section in Settings so other sections' deadlines are hidden."
+                    return
                 tasks = TaskCollector(client, section=cfg.section, lookback_days=cfg.lookback_days).collect(now)
+                tasks = [
+                    t for t in tasks
+                    if str(t.cmid) not in cfg.hidden and not cfg.is_ignored(t.name, t.course_name or t.course)
+                ]
                 self.snapshot.tasks = tasks
                 self.snapshot.synced_at = now
                 self.snapshot.error = ""
@@ -107,6 +115,8 @@ class Service:
             "lms_url": cfg.lms_url,
             "settings": {
                 "section": cfg.section,
+                "no_sections": cfg.no_sections,
+                "ignore_words": cfg.ignore_words,
                 "remind_hours": cfg.remind_hours,
                 "poll_minutes": cfg.poll_minutes,
                 "desktop_notifications": cfg.desktop_notifications,
@@ -115,8 +125,10 @@ class Service:
             "syncing": snap.syncing,
             "error": snap.error,
             "notify_error": snap.notify_error,
+            "hidden": [{"cmid": c, "name": n} for c, n in cfg.hidden.items()],
             "tasks": [
                 {
+                    "cmid": t.cmid,
                     "name": t.name,
                     "course": course_label(t),
                     "module": t.module,

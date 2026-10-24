@@ -15,6 +15,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from . import desktop
+from .sections import parse_section
 from .moodle import MoodleClient, MoodleError
 from .service import Service
 
@@ -94,6 +95,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self._login(data)
             if route == "/api/settings":
                 return self._settings(data)
+            if route == "/api/hide":
+                cmid, name = str(int(data["cmid"])), str(data.get("name", ""))[:200]
+                if data.get("hidden", True):
+                    service.store.config.hidden[cmid] = name
+                else:
+                    service.store.config.hidden.pop(cmid, None)
+                service.store.save()
+                service.sync_soon()
+                return self._json(200, {"ok": True})
             if route == "/api/sync":
                 service.sync_soon()
                 return self._json(200, {"ok": True})
@@ -119,10 +129,12 @@ class Handler(BaseHTTPRequestHandler):
         username, password = str(data.get("username", "")).strip(), str(data.get("password", ""))
         if not username or not password:
             raise ValueError("Enter your LMS username and password.")
+        no_sections = bool(data.get("no_sections"))
+        section = "" if no_sections else parse_section(str(data.get("section", "")))
         client = MoodleClient(lms_url, legacy_tls=cfg.legacy_tls)
         client.login(username, password)  # password goes nowhere else and is not kept
         cfg.lms_url, cfg.username, cfg.token = lms_url, username, client.token or ""
-        cfg.section = str(data.get("section", cfg.section)).strip().upper()
+        cfg.section, cfg.no_sections = section, no_sections
         store.save()
         self.server.service.sync_soon()
         self._json(200, {"ok": True})
@@ -130,8 +142,12 @@ class Handler(BaseHTTPRequestHandler):
     def _settings(self, data: dict) -> None:
         service = self.server.service
         cfg = service.store.config
-        if "section" in data:
-            cfg.section = str(data["section"]).strip().upper()
+        if "no_sections" in data or "section" in data:
+            no_sections = bool(data.get("no_sections", cfg.no_sections))
+            section = "" if no_sections else parse_section(str(data.get("section", cfg.section)))
+            cfg.section, cfg.no_sections = section, no_sections
+        if "ignore_words" in data:
+            cfg.ignore_words = [w.strip() for w in data["ignore_words"] if str(w).strip()][:50]
         if "remind_hours" in data:
             hours = sorted({int(h) for h in data["remind_hours"] if 0 < int(h) <= 24 * 30}, reverse=True)
             cfg.remind_hours = hours

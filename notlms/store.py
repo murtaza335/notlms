@@ -18,6 +18,9 @@ class Config:
     username: str = ""
     token: str = ""
     section: str = ""
+    no_sections: bool = False  # True: my courses do not use sections, show everything
+    ignore_words: list[str] = field(default_factory=list)  # hide tasks whose name/course contains any
+    hidden: dict[str, str] = field(default_factory=dict)  # cmid -> name of tasks the user dismissed
     lookback_days: int = 14
     legacy_tls: bool = True
     remind_hours: list[int] = field(default_factory=lambda: [72, 24, 6, 1])
@@ -27,6 +30,14 @@ class Config:
     @property
     def logged_in(self) -> bool:
         return bool(self.token)
+
+    @property
+    def needs_section(self) -> bool:
+        return not self.section and not self.no_sections
+
+    def is_ignored(self, name: str, course: str) -> bool:
+        text = f"{name} {course}".lower()
+        return any(word.lower() in text for word in self.ignore_words)
 
 
 class ConfigStore:
