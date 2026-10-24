@@ -10,7 +10,12 @@ you haven't submitted yet, with desktop reminders before they're due.
 - Open source, standard library only (no third-party dependencies), so the
   whole thing is auditable.
 
-## Run it
+## Download
+
+Get the latest build for Windows, macOS or Linux from the project's GitHub Pages
+site (or the Releases page). Privacy details: [PRIVACY.md](PRIVACY.md).
+
+## Run from source
 
 Requires Python 3.12+ (downloadable single-file builds are planned, see
 [docs/DISTRIBUTION_DESIGN.md](docs/DISTRIBUTION_DESIGN.md)).

@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notlms - never miss an LMS deadline</title>
+<meta name="description" content="A free, open-source app that runs on your own computer and reminds you about unsubmitted Moodle LMS tasks. No server, no tracking.">
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #1b1f24; --muted: #596273; --line: #e3e6ea;
+    --accent: #2f6fed; --accent-text: #fff; --code: #eef0f3; --warn: #8a4b00; --warn-bg: #fff4e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14161a; --card: #1d2026; --text: #e8eaed; --muted: #a0a9b6; --line: #2c3038;
+            --accent: #6b9bff; --accent-text: #0b1220; --code: #262a31; --warn: #ffc47a; --warn-bg: #33270f; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; flex-wrap: wrap; gap: 8px; }
+  nav .brand { font-weight: 700; font-size: 1.15rem; }
+  nav a { color: var(--muted); text-decoration: none; margin-left: 16px; font-size: .95rem; }
+  nav a:hover { color: var(--text); }
+  .hero { padding: 40px 0 24px; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); line-height: 1.15; margin: 0 0 12px; }
+  h2 { font-size: 1.5rem; margin: 0 0 12px; }
+  h3 { font-size: 1.05rem; margin: 20px 0 4px; }
+  section { padding: 32px 0; border-top: 1px solid var(--line); }
+  .lead { font-size: 1.15rem; color: var(--muted); max-width: 640px; }
+  .btn { display: inline-block; background: var(--accent); color: var(--accent-text); padding: 12px 22px; border-radius: 10px;
+         font-weight: 600; text-decoration: none; border: 0; font-size: 1rem; cursor: pointer; }
+  .btn.small { padding: 7px 14px; font-size: .9rem; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  .btn[aria-disabled=true] { opacity: .55; pointer-events: none; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  .cta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { text-align: left; padding: 12px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+  th { border-top: 0; color: var(--muted); font-weight: 600; font-size: .85rem; }
+  td:last-child, th:last-child { text-align: right; }
+  select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9em; }
+  code { background: var(--code); padding: 1px 6px; border-radius: 5px; }
+  pre { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; }
+  .steps li { counter-increment: s; padding-left: 44px; position: relative; margin: 14px 0; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+                      background: var(--accent); color: var(--accent-text); font-weight: 700; display: grid; place-items: center; font-size: .9rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .note { background: var(--warn-bg); color: var(--warn); padding: 12px 14px; border-radius: 10px; font-size: .95rem; }
+  .flow { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .flow .node { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--card); text-align: center; font-weight: 600; }
+  .flow .arrow { color: var(--muted); }
+  details { border-top: 1px solid var(--line); padding: 12px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  footer { padding: 32px 0 56px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
+  a { color: var(--accent); }
+  [hidden] { display: none !important; }
+  @media (max-width: 520px) { td:nth-child(2), th:nth-child(2) { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <span class="brand">notlms</span>
+    <span>
+      <a href="#download">Download</a><a href="#how">How it works</a><a href="#privacy">Privacy</a><a href="#setup">Setup</a><a href="#faq">FAQ</a>
+      <a id="gh-link" href="#">GitHub</a>
+    </span>
+  </nav>
+
+  <header class="hero">
+    <h1>Never miss an LMS deadline again.</h1>
+    <p class="lead">notlms runs on your own computer, checks your Moodle LMS for tasks you haven't submitted,
+      and pops up a desktop reminder before they're due. Free and open source. No account, no server, no tracking.</p>
+    <div class="cta">
+      <a class="btn" id="hero-btn" href="#download" aria-disabled="true">Download</a>
+      <span class="muted" id="hero-note">Looking up the latest version...</span>
+    </div>
+  </header>
+
+  <section id="download">
+    <h2>Download</h2>
+    <div class="card">
+      <p style="margin-top:0">Version
+        <select id="version" aria-label="Version"></select>
+        <span class="muted" id="version-date"></span>
+      </p>
+      <table>
+        <thead><tr><th>Platform</th><th>File</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="muted" id="dl-fallback" hidden>Couldn't load the release list. Get files from the
+        <a id="releases-link" href="#">Releases page</a>.</p>
+      <p class="muted">Every release includes a <code>SHA256SUMS</code> file and a build attestation. See
+        <a href="#verify">how to verify your download</a>. <a id="all-releases" href="#">All releases and changelog</a>.</p>
+    </div>
+    <p class="note" style="margin-top:16px"><strong>First launch warning is expected.</strong> The app isn't code-signed yet
+      (signing costs money, and this is a free student project), so Windows and macOS will warn you about an
+      "unknown developer". The steps below show how to open it. Because the code is public, you can read it or build it yourself.</p>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <div class="flow">
+      <div class="node">Your computer<br><span class="muted">notlms</span></div>
+      <span class="arrow">&harr;</span>
+      <div class="node">Your LMS<br><span class="muted">official Moodle API</span></div>
+    </div>
+    <p class="muted" style="text-align:center">There is no notlms server in this picture. That's the point.</p>
+    <ol class="steps">
+      <li><strong>You log in once</strong> on a page that notlms opens on your own computer (<code>127.0.0.1</code>, not the internet).
+        Your password goes to your LMS to get an access token, then it's discarded.</li>
+      <li><strong>It checks your LMS</strong> every 30 minutes (configurable) for work that still needs action, and ignores submission links
+        for other sections.</li>
+      <li><strong>It reminds you</strong> with a native desktop notification when a task is new, then at 72, 24, 6 and 1 hours before the deadline,
+        and once more if it's overdue and still open. Each reminder is sent once.</li>
+      <li><strong>The dashboard</strong> shows everything pending, with course name, deadline and time left.</li>
+    </ol>
+    <p class="muted">Reminders only appear while notlms is running and your computer is awake. After your computer wakes up, the next check
+      announces anything you missed.</p>
+  </section>
+
+  <section id="privacy">
+    <h2>Privacy: what we do with your data</h2>
+    <div class="grid">
+      <div class="card"><h3 style="margin-top:0">We collect nothing</h3><p class="muted" style="margin:0">No server, accounts, analytics or telemetry.
+        The authors never receive any of your data.</p></div>
+      <div class="card"><h3 style="margin-top:0">Password: used once</h3><p class="muted" style="margin:0">Sent only to your LMS to get a token.
+        Never saved to disk.</p></div>
+      <div class="card"><h3 style="margin-top:0">Token stays local</h3><p class="muted" style="margin:0">Stored in a file in your user folder.
+        "Forget everything" deletes it, and you can revoke it in your LMS.</p></div>
+      <div class="card"><h3 style="margin-top:0">Auditable</h3><p class="muted" style="margin:0">Small, readable code with no third-party
+        dependencies. Read it, or build it yourself.</p></div>
+    </div>
+    <p>Be aware: a Moodle token can do what the Moodle mobile app can do on your account, so keep your computer account secure.
+      notlms only reads your pending tasks. It never submits anything. Full details and the exact files that make network
+      calls are in <a id="privacy-link" href="#">PRIVACY.md</a>.</p>
+  </section>
+
+  <section id="setup">
+    <h2>Setup</h2>
+    <ol class="steps">
+      <li><strong>Download</strong> the file for your system above.</li>
+      <li><strong>Open it</strong> (see your system below). A terminal window opens and your browser shows the notlms page. Keep that window open: closing it stops the reminders.</li>
+      <li><strong>Log in</strong> with your LMS username and password. Set your section (for example <code>B</code>) so you only see your own submission links.</li>
+      <li><strong>Press "Send test notification"</strong> to confirm reminders appear on your desktop.</li>
+      <li><strong>Start it whenever you turn on your computer</strong>, or add it to your startup apps so you don't forget.</li>
+    </ol>
+
+    <h3>Windows</h3>
+    <p>Double-click <code>notlms-windows-x64.exe</code>. If you see "Windows protected your PC", click <strong>More info</strong>, then
+      <strong>Run anyway</strong>. Make sure notifications aren't blocked by Focus Assist.</p>
+    <h3>macOS</h3>
+    <p>Unpack the <code>.tar.gz</code> (double-click it), then in Terminal run:</p>
+    <pre>cd ~/Downloads && xattr -d com.apple.quarantine notlms && ./notlms</pre>
+    <p class="muted">Or right-click the <code>notlms</code> file, choose <strong>Open</strong>, then confirm. Pick the <em>arm64</em> file for Apple silicon
+      (M1 and newer) and <em>x64</em> for Intel Macs. If notifications don't show, allow them for "Script Editor" in System Settings, then Notifications.</p>
+    <h3>Linux</h3>
+    <pre>tar -xzf notlms-linux-x64.tar.gz
+./notlms</pre>
+    <p class="muted">Desktop notifications need <code>notify-send</code> (package <code>libnotify-bin</code> or <code>libnotify</code>).</p>
+    <h3>Run from source instead</h3>
+    <p>Needs Python 3.12 or newer and nothing else:</p>
+    <pre id="src-cmd">git clone https://github.com/__REPO__.git
+cd notlms
+python3 -m notlms</pre>
+  </section>
+
+  <section id="verify">
+    <h2>Verify your download</h2>
+    <p>Check the file against the <code>SHA256SUMS</code> published with the release:</p>
+    <pre>sha256sum -c SHA256SUMS --ignore-missing      # Linux
+shasum -a 256 -c SHA256SUMS --ignore-missing  # macOS
+certutil -hashfile notlms-windows-x64.exe SHA256   # Windows, compare by eye</pre>
+    <p>Or prove it was built from this repository's public code by GitHub Actions (needs the <a href="https://cli.github.com/">GitHub CLI</a>):</p>
+    <pre id="attest-cmd">gh attestation verify &lt;downloaded-file&gt; --repo __REPO__</pre>
+  </section>
+
+  <section id="faq">
+    <h2>FAQ</h2>
+    <details><summary>Does it work with my university?</summary><p>It's built for NUST's LMS but uses the standard Moodle mobile API, so
+      other Moodle sites that allow mobile app login should work: enter their address on the login page. Sites that only offer single sign-on
+      (no username and password on the login form) aren't supported yet.</p></details>
+    <details><summary>Can it submit my assignments or read my grades?</summary><p>No. It only reads the list of tasks that still need action.</p></details>
+    <details><summary>Why no reminders when my laptop is off or asleep?</summary><p>Everything runs on your computer, and there's deliberately no server
+      to do it for you. After it wakes, the next check shows what you missed.</p></details>
+    <details><summary>The app is "unsigned". Is it safe?</summary><p>Unsigned means we haven't paid for a publisher certificate, not that
+      it's unsafe. You can read the source, verify the download was built from it, or run from source.</p></details>
+    <details><summary>How do I uninstall it?</summary><p>Click "Forget everything and log out" in the app, delete the downloaded file, and delete the
+      <code>notlms</code> folder in your user data directory (see the privacy section). Nothing else is installed on your system.</p></details>
+    <details><summary>Something broke. Where do I report it?</summary><p>Open an issue on <a id="issues-link" href="#">GitHub</a>. For security problems use the private
+      "Report a vulnerability" option instead.</p></details>
+  </section>
+
+  <footer>
+    notlms is free software under the MIT license. Not affiliated with NUST or Moodle.
+    <a id="src-link" href="#">Source code</a>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const PLACEHOLDER = "__REPO__";
+  let repo = PLACEHOLDER;
+  if (repo.startsWith("__")) { // opened locally or not deployed through the workflow: infer from the Pages URL
+    const owner = location.hostname.split(".")[0], name = location.pathname.split("/")[1];
+    repo = owner && name && location.hostname.endsWith(".github.io") ? owner + "/" + name : "";
+  }
+  const $ = (id) => document.getElementById(id);
+  const gh = repo ? "https://github.com/" + repo : "#";
+  $("gh-link").href = gh; $("src-link").href = gh; $("issues-link").href = gh + "/issues";
+  $("releases-link").href = gh + "/releases"; $("all-releases").href = gh + "/releases";
+  $("privacy-link").href = gh + "/blob/main/PRIVACY.md";
+  if (repo) {
+    $("src-cmd").textContent = "git clone https://github.com/" + repo + ".git\ncd " + repo.split("/")[1] + "\npython3 -m notlms";
+    $("attest-cmd").textContent = "gh attestation verify <downloaded-file> --repo " + repo;
+  }
+
+  const PLATFORMS = [
+    { key: "windows-x64", label: "Windows", detail: "64-bit .exe" },
+    { key: "macos-arm64", label: "macOS (Apple silicon)", detail: "M1 and newer, .tar.gz" },
+    { key: "macos-x64", label: "macOS (Intel)", detail: ".tar.gz" },
+    { key: "linux-x64", label: "Linux", detail: "64-bit .tar.gz" },
+  ];
+
+  function detect() {
+    const ua = navigator.userAgent, p = navigator.platform || "";
+    if (/Win/i.test(p) || /Windows/i.test(ua)) return "windows-x64";
+    if (/Mac/i.test(p) || /Mac OS X/i.test(ua)) return "macos-arm64"; // browsers can't tell Apple silicon from Intel
+    if (/Linux|X11/i.test(p + ua) && !/Android/i.test(ua)) return "linux-x64";
+    return null;
+  }
+
+  function fmtSize(n) { return n ? (n / 1048576).toFixed(1) + " MB" : ""; }
+
+  function showRelease(rel) {
+    const rows = $("rows"); rows.replaceChildren();
+    $("version-date").textContent = "released " + new Date(rel.published_at).toLocaleDateString();
+    for (const p of PLATFORMS) {
+      const asset = rel.assets.find((a) => a.name.startsWith("notlms-" + p.key));
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td"); td1.textContent = p.label;
+      const td2 = document.createElement("td"); td2.className = "muted";
+      td2.textContent = asset ? asset.name + " · " + fmtSize(asset.size) : p.detail;
+      const td3 = document.createElement("td");
+      const a = document.createElement("a"); a.className = "btn small"; a.textContent = "Download";
+      if (asset) a.href = asset.browser_download_url; else a.setAttribute("aria-disabled", "true");
+      td3.append(a); tr.append(td1, td2, td3); rows.append(tr);
+    }
+    const sums = rel.assets.find((a) => a.name === "SHA256SUMS");
+    if (sums) {
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td"); td1.textContent = "Checksums";
+      const td2 = document.createElement("td"); td2.className = "muted"; td2.textContent = "SHA256SUMS";
+      const td3 = document.createElement("td"); const a = document.createElement("a");
+      a.className = "btn small ghost"; a.textContent = "Download"; a.href = sums.browser_download_url;
+      td3.append(a); tr.append(td1, td2, td3); rows.append(tr);
+    }
+    const mine = detect(), asset = mine && rel.assets.find((a) => a.name.startsWith("notlms-" + mine));
+    const btn = $("hero-btn");
+    if (asset) {
+      const label = PLATFORMS.find((p) => p.key === mine).label;
+      btn.textContent = "Download for " + label; btn.href = asset.browser_download_url; btn.removeAttribute("aria-disabled");
+      $("hero-note").textContent = rel.tag_name + " · other platforms below";
+    } else {
+      btn.textContent = "See downloads"; btn.href = "#download"; btn.removeAttribute("aria-disabled");
+      $("hero-note").textContent = "Latest: " + rel.tag_name;
+    }
+  }
+
+  async function load() {
+    if (!repo) { $("dl-fallback").hidden = false; $("hero-note").textContent = "Downloads are on the GitHub Releases page."; return; }
+    try {
+      const res = await fetch("https://api.github.com/repos/" + repo + "/releases?per_page=30", { headers: { Accept: "application/vnd.github+json" } });
+      if (!res.ok) throw new Error(res.status);
+      const releases = (await res.json()).filter((r) => !r.draft && !r.prerelease && r.assets.length);
+      if (!releases.length) {
+        $("hero-note").textContent = "The first release isn't published yet. You can run from source (see Setup).";
+        $("version").hidden = true; return;
+      }
+      const sel = $("version");
+      for (const [i, r] of releases.entries()) {
+        const o = document.createElement("option"); o.value = i; o.textContent = r.tag_name + (i === 0 ? " (latest)" : ""); sel.append(o);
+      }
+      sel.addEventListener("change", () => showRelease(releases[+sel.value]));
+      showRelease(releases[0]);
+    } catch (_) {
+      $("dl-fallback").hidden = false; $("hero-note").textContent = "Downloads are on the GitHub Releases page.";
+      $("hero-btn").textContent = "Open Releases page"; $("hero-btn").href = gh + "/releases"; $("hero-btn").removeAttribute("aria-disabled");
+    }
+  }
+  load();
+})();
+</script>
+</body>
+</html>
