@@ -63,3 +63,15 @@ class DueRemindersTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CourseLabelTests(unittest.TestCase):
+    def test_label_combines_code_and_title(self):
+        from notlms.formatting import course_label
+
+        def task(course, name):
+            return Task(1, "x", course, "assign", 0, 0, "", name)
+
+        self.assertEqual(course_label(task("CS-337-F'26 ABC", "Operating Systems")), "CS-337 Operating Systems")
+        self.assertEqual(course_label(task("CS-337-F'26 ABC", "CS-337 Operating Systems")), "CS-337 Operating Systems")
+        self.assertEqual(course_label(task("CS-337", "")), "CS-337")

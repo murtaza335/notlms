@@ -24,6 +24,7 @@ class Task:
     due: int  # unix timestamp
     cutoff: int  # unix timestamp, 0 = no hard cutoff
     url: str
+    course_name: str = ""  # full course title, e.g. "Operating Systems"
 
     def is_open(self, now: float) -> bool:
         return not self.cutoff or now < self.cutoff
@@ -115,6 +116,7 @@ class TaskCollector:
             due=event["timesort"],
             cutoff=cutoff,
             url=event["url"],
+            course_name=event["course"].get("fullname", ""),
         )
 
     def _is_done(self, task: Task) -> bool:

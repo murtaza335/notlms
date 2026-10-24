@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import desktop
-from .formatting import format_digest, format_due, short_course, time_left
+from .formatting import course_label, format_digest, format_due, time_left
 from .moodle import MoodleClient, MoodleError
 from .reminders import ReminderState, due_reminders
 from .store import ConfigStore
@@ -118,7 +118,7 @@ class Service:
             "tasks": [
                 {
                     "name": t.name,
-                    "course": short_course(t.course),
+                    "course": course_label(t),
                     "module": t.module,
                     "due": t.due,
                     "due_text": format_due(t),

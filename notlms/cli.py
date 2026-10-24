@@ -14,7 +14,7 @@ import time
 import webbrowser
 
 from . import __version__
-from .formatting import format_due, short_course, time_left
+from .formatting import course_label, format_due, time_left
 from .moodle import MoodleClient
 from .paths import data_dir
 from .service import Service
@@ -65,7 +65,7 @@ def cmd_list(store: ConfigStore) -> int:
     if not tasks:
         print("Nothing pending.")
     for task in tasks:
-        print(f"[{time_left(task, now)}] {short_course(task.course)} - {task.name}\n  Due {format_due(task)} - {task.url}")
+        print(f"[{time_left(task, now)}] {course_label(task)} - {task.name}\n  Due {format_due(task)} - {task.url}")
     return 0
 
 

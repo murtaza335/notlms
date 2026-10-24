@@ -27,6 +27,17 @@ def short_course(course: str) -> str:
     return "-".join(parts[:2]) if len(parts) >= 2 else head
 
 
+def course_label(task: Task) -> str:
+    """'CS-337 Operating Systems', falling back to the code alone when the title is missing."""
+    code = short_course(task.course)
+    name = task.course_name.strip()
+    if not name or name == task.course:
+        return code
+    if code and name.upper().startswith(code.upper()):
+        return name
+    return f"{code} {name}" if code else name
+
+
 def time_left(task: Task, now: float) -> str:
     left = task.due - now
     return f"overdue by {humanize_delta(left)}" if left <= 0 else f"{humanize_delta(left)} left"
@@ -43,5 +54,5 @@ def format_digest(reminders: list[Reminder], now: float) -> tuple[str, str]:
     title = f"notlms: {count} pending task{'s' if count != 1 else ''}"
     if overdue:
         title += f" ({overdue} overdue)"
-    lines = [f"{short_course(r.task.course)} {r.task.name} ({time_left(r.task, now)})" for r in reminders]
+    lines = [f"{course_label(r.task)}: {r.task.name} ({time_left(r.task, now)})" for r in reminders]
     return title, "\n".join(lines)
