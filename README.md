@@ -12,13 +12,14 @@ you haven't submitted yet, with desktop reminders before they're due.
 
 ## Download
 
-Get the latest build for Windows, macOS or Linux from the project's GitHub Pages
-site (or the Releases page). Privacy details: [PRIVACY.md](PRIVACY.md).
+Get the latest build for Windows, macOS or Linux from
+<https://murtaza335.github.io/notlms/> (or the
+[Releases page](https://github.com/murtaza335/notlms/releases)). Privacy details: [PRIVACY.md](PRIVACY.md).
 
 ## Run from source
 
-Requires Python 3.12+ (downloadable single-file builds are planned, see
-[docs/DISTRIBUTION_DESIGN.md](docs/DISTRIBUTION_DESIGN.md)).
+Requires Python 3.12+. Most people should use the downloadable builds above
+instead (design notes: [docs/DISTRIBUTION_DESIGN.md](docs/DISTRIBUTION_DESIGN.md)).
 
 ```bash
 python3 -m notlms          # starts the app and opens http://127.0.0.1:8765
