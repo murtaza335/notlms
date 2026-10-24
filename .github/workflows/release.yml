@@ -1,0 +1,90 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: # build only (no release) for testing the pipeline
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python -m unittest discover -s tests
+      - name: Tag must match package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          v=$(python -c "import notlms; print(notlms.__version__)")
+          [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} != package version v$v"; exit 1; }
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, name: linux-x64, ext: tar.gz }
+          - { os: macos-14, name: macos-arm64, ext: tar.gz }
+          - { os: macos-15-intel, name: macos-x64, ext: tar.gz }
+          - { os: windows-latest, name: windows-x64, ext: exe }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python -m pip install pyinstaller==6.16.0
+      - run: pyinstaller --noconfirm packaging/notlms.spec
+        shell: bash
+      - name: Smoke test the built binary
+        shell: bash
+        run: |
+          bin=dist/notlms; [ -f dist/notlms.exe ] && bin=dist/notlms.exe
+          "$bin" --version
+          NOTLMS_HOME="$RUNNER_TEMP/notlms-smoke" "$bin" --no-browser --port 8799 &
+          pid=$!
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:8799/ | grep -q "<title>notlms</title>" && ok=1 && break
+            sleep 1
+          done
+          kill $pid || true
+          [ "${ok:-}" = 1 ] || { echo "UI did not come up"; exit 1; }
+      - name: Package
+        shell: bash
+        run: |
+          mkdir out
+          if [ "${{ matrix.ext }}" = exe ]; then
+            cp dist/notlms.exe "out/notlms-${{ matrix.name }}.exe"
+          else
+            tar -czf "out/notlms-${{ matrix.name }}.tar.gz" -C dist notlms
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notlms-${{ matrix.name }}
+          path: out/*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - name: Checksums
+        run: cd out && sha256sum * > SHA256SUMS && cat SHA256SUMS
+      - uses: actions/attest-build-provenance@v2
+        with: { subject-path: "out/*" }
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" out/* \
+            --repo "${GITHUB_REPOSITORY}" --title "notlms ${GITHUB_REF_NAME}" --generate-notes

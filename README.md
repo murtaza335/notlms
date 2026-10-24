@@ -59,3 +59,19 @@ python3 -m unittest discover -s tests
 - Asking Moodle for an assignment's submission status creates an empty
   submission record (status `new`) if none exists. Opening the assignment page
   in a browser does the same, and it does not count as submitting.
+
+## Releases
+
+Pushing a tag `vX.Y.Z` (must equal `notlms.__version__`) runs
+`.github/workflows/release.yml`: tests, PyInstaller builds for Linux, macOS
+(Apple silicon and Intel) and Windows, a smoke test of each binary, then a
+GitHub Release with the files, `SHA256SUMS` and build provenance attestations.
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+gh attestation verify <file> --repo <owner>/<repo>   # verify a download
+```
+
+Build one locally: `pip install pyinstaller && pyinstaller packaging/notlms.spec`
+(output in `dist/`). The binaries are unsigned for now, so Windows SmartScreen
+and macOS Gatekeeper will warn on first launch.
