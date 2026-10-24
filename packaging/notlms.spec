@@ -8,6 +8,7 @@ a = Analysis(
     [os.path.join(SPECPATH, "entry.py")],
     pathex=[ROOT],
     datas=[(os.path.join(ROOT, "notlms", "ui", "index.html"), "notlms/ui")],
+    hiddenimports=["certifi"],
     excludes=["tkinter", "unittest", "pydoc"],
 )
 pyz = PYZ(a.pure)

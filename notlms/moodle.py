@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import ssl
 import urllib.parse
 import urllib.request
@@ -13,12 +14,40 @@ class MoodleError(RuntimeError):
     pass
 
 
+# Where Linux distros keep their CA bundle. A frozen binary is built on one
+# distro and only knows that distro's path, so check the others too.
+_CA_BUNDLES = (
+    "/etc/ssl/certs/ca-certificates.crt",  # Debian, Ubuntu, Arch
+    "/etc/pki/tls/certs/ca-bundle.crt",  # Fedora, RHEL
+    "/etc/ssl/ca-bundle.pem",  # openSUSE
+    "/etc/ssl/cert.pem",  # Alpine, macOS, BSD
+)
+
+
+def _trusted_context() -> ssl.SSLContext:
+    """Default TLS context plus every CA bundle we can find (system, then certifi if bundled)."""
+    ctx = ssl.create_default_context()
+    for path in _CA_BUNDLES:
+        if os.path.isfile(path):
+            try:
+                ctx.load_verify_locations(cafile=path)
+            except (ssl.SSLError, OSError):
+                continue
+    try:
+        import certifi  # present in the released binaries; optional when running from source
+
+        ctx.load_verify_locations(cafile=certifi.where())
+    except (ImportError, ssl.SSLError, OSError):
+        pass
+    return ctx
+
+
 class MoodleClient:
     def __init__(self, base_url: str, *, legacy_tls: bool = False, timeout: float = 30):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.token: str | None = None
-        self._ssl = ssl.create_default_context()
+        self._ssl = _trusted_context()
         if legacy_tls:
             # Some institutional servers still require pre-RFC 5746 renegotiation,
             # which OpenSSL 3 refuses by default.
