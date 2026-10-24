@@ -2,8 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lms_notifier.reminders import NEW, OVERDUE, ReminderState, current_stage, due_reminders
-from lms_notifier.tasks import Task
+from notlms.reminders import NEW, OVERDUE, ReminderState, current_stage, due_reminders
+from notlms.tasks import Task
 
 HOURS = [72, 24, 6, 1]
 NOW = 1_800_000_000

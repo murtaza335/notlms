@@ -1,8 +1,30 @@
-# lms-notifier
+# notlms
 
-Watches the NUST LMS (Moodle) for activities you haven't submitted yet and
-reminds you before they're due, via push notification, Telegram, email or
-WhatsApp.
+A small app that runs **on your own computer** and shows the Moodle LMS tasks
+you haven't submitted yet, with desktop reminders before they're due.
+
+- No notlms server exists. Nothing is uploaded anywhere.
+- Your password is sent only to your LMS, once, to get an access token. It is
+  never saved. The token is stored in a file on your computer; "Forget
+  everything" deletes it.
+- Open source, standard library only (no third-party dependencies), so the
+  whole thing is auditable.
+
+## Run it
+
+Requires Python 3.12+ (downloadable single-file builds are planned, see
+[docs/DISTRIBUTION_DESIGN.md](docs/DISTRIBUTION_DESIGN.md)).
+
+```bash
+python3 -m notlms          # starts the app and opens http://127.0.0.1:8765
+python3 -m notlms list     # print pending tasks in the terminal
+```
+
+Log in from the page that opens. Keep notlms running: reminders fire only
+while it is running and your computer is awake.
+
+Data lives in `~/.config/notlms` (Linux), `~/Library/Application Support/notlms`
+(macOS) or `%APPDATA%\notlms` (Windows). Override with `NOTLMS_HOME`.
 
 ## How it works
 
@@ -12,55 +34,17 @@ login (moodle_mobile_app token)
   -> filter by your section                        # combined courses post one link per section
   -> verify completion                             # mod_assign_get_submission_status / mod_quiz_get_user_attempts
   -> pick reminder stage                           # first seen, 72h, 24h, 6h, 1h, overdue
-  -> skip stages already sent (.state/state.json)
-  -> send one digest per run to each channel
+  -> skip stages already sent
+  -> one desktop notification per sync
 ```
 
-It talks to Moodle's official web-service API (the one the Moodle mobile app
-uses), so there is no browser automation or HTML scraping. It uses only the
-Python standard library.
+It uses Moodle's official web-service API (the one the mobile app uses), no
+scraping. The local web page listens on `127.0.0.1` only, and every request
+needs a secret generated at launch.
 
-Overdue assignments are still reported, once, while the assignment accepts
-late submissions (no cut-off date, or before the cut-off).
-
-## Setup
-
-Requires Python 3.12+.
-
-```bash
-cp .env.example .env      # fill in LMS_USERNAME, LMS_PASSWORD, LMS_SECTION
-chmod 600 .env
-python3 -m lms_notifier list            # see what's pending
-python3 -m lms_notifier run --dry-run   # see what would be sent
-```
-
-### Notification channels
-
-Set `NOTIFIERS` to a comma-separated list, then check them with
-`python3 -m lms_notifier test-notify`.
-
-| Channel    | Setup                                                                                         |
-|------------|-----------------------------------------------------------------------------------------------|
-| `ntfy`     | Install the ntfy app, subscribe to a long random topic, and set `NTFY_TOPIC`. No account needed. |
-| `telegram` | Create a bot with @BotFather, message it once, then get your chat id from `getUpdates`.        |
-| `email`    | SMTP. For Gmail, enable 2FA and create an App Password.                                       |
-| `whatsapp` | Register with [CallMeBot](https://www.callmebot.com/blog/free-api-whatsapp-messages/) to get an API key. |
-| `console`  | Prints to stdout. Useful for testing.                                                         |
-
-## Scheduling
-
-### systemd user timer (Linux)
-
-```bash
-mkdir -p ~/.config/systemd/user
-cp deploy/lms-notifier.{service,timer} ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now lms-notifier.timer
-loginctl enable-linger "$USER"     # keep running while logged out
-journalctl --user -u lms-notifier  # logs
-```
-
-Edit `WorkingDirectory` in the service file if the repo lives elsewhere.
+Desktop notifications use `notify-send` (Linux; install libnotify), AppleScript
+(macOS) and a PowerShell toast (Windows). The Windows path is not yet tested on
+a real machine.
 
 ## Development
 
@@ -71,7 +55,7 @@ python3 -m unittest discover -s tests
 ## Notes
 
 - `lms.nust.edu.pk` only supports legacy TLS renegotiation, which OpenSSL 3
-  rejects by default. `LMS_LEGACY_TLS=true` opts into it for LMS requests only.
+  rejects by default; notlms opts into it for LMS requests only.
 - Asking Moodle for an assignment's submission status creates an empty
   submission record (status `new`) if none exists. Opening the assignment page
   in a browser does the same, and it does not count as submitting.

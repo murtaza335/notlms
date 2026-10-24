@@ -1,6 +1,6 @@
-# Distribution design: open-source, runs on the student's laptop
+# notlms distribution design: open-source, runs on the student's laptop
 
-Status: **decision + plan, no code yet**. Last updated 2026-10-24.
+Status: **decision + plan; local app (steps 1-3 of §5) implemented**. Last updated 2026-10-24.
 Supersedes the server-side options in [MULTI_USER_DESIGN.md](MULTI_USER_DESIGN.md);
 we are going with its "on-device" branch.
 
@@ -33,14 +33,14 @@ A tray icon (optional) can be added later without changing the architecture.
 ## 2. Architecture
 
 ```
- lms-notifier (one process)
+ notlms (one process)
  ├─ HTTP server on 127.0.0.1 only (stdlib http.server) ── dashboard + setup UI
- ├─ Scheduler thread: every N min → Moodle API → reminders.py → notifiers/
+ ├─ Scheduler thread: every N min → Moodle API → reminders.py → desktop.py (OS notification)
  └─ Local store (per-user config dir, 0600): config.json, state.json
 ```
 
-- Reuses `moodle.py`, `sections.py`, `reminders.py`, `notifiers/` unchanged.
-  New code: `lms_notifier/web/` (server + static HTML/JS) and a scheduler loop.
+- Reuses `moodle.py`, `sections.py`, `reminders.py`. New code: `web.py`
+  (server), `ui/index.html`, `service.py` (scheduler), `desktop.py`, `store.py`.
 - UI: plain HTML + a little vanilla JS. No build step, no framework.
 - Binds to `127.0.0.1` only, random-free fixed port with fallback; requests
   require a per-launch token in the URL to stop other local sites or users from
@@ -75,9 +75,9 @@ limitation goes on the download page, not buried.
 ## 3. Packaging and release
 
 - **Build:** PyInstaller `--onefile` per OS, driven by a GitHub Actions matrix:
-  `windows-latest` → `lms-notifier-windows-x64.exe`, `macos-14` (arm64) and
-  `macos-13` (x64) → `.dmg`/`.zip`, `ubuntu-22.04` → `lms-notifier-linux-x64`
-  (+ optional AppImage). Build on the oldest practical OS image for glibc
+  `windows-latest` → `notlms-windows-x64.exe`, `macos-14` (arm64) and
+  `macos-13` (x64) → `.dmg`/`.zip`, `ubuntu-22.04` → `notlms-linux-x64`
+  (+ optional AppImage). Binaries are named `notlms-<os>-<arch>`. Build on the oldest practical OS image for glibc
   compatibility.
 - **Release flow:** push tag `vX.Y.Z` → CI builds all targets → attaches
   binaries plus `SHA256SUMS` to a GitHub Release. Use GitHub's artifact
@@ -87,7 +87,7 @@ limitation goes on the download page, not buried.
   CI; docs explain "build it yourself in three commands".
 - **Legacy TLS:** the LMS needs OpenSSL legacy renegotiation. The bundled
   Python's OpenSSL must be tested against the live site per platform; this is
-  the most likely thing to break and gets a CI smoke test (`lms-notifier
+  the most likely thing to break and gets a CI smoke test (`notlms
   check-tls`).
 
 ### The unsigned-binary problem (the real UX risk)
@@ -138,11 +138,17 @@ Static, no framework. Sections:
 7. Manual test on real Windows, macOS and Linux machines, especially TLS and
    autostart. Then Windows signing.
 
-## 6. Open questions
+## 6. Scope decisions
+
+- **Remote channels are out of scope for now.** ntfy, Telegram, email and
+  WhatsApp were removed. Reminders are native desktop notifications from the
+  laptop itself, so there is no third party and nothing to configure.
+- Project name is **notlms**; package, command and binaries use it.
+- Token currently lives in `config.json` (mode 0600). Moving it to the OS
+  keychain is still to do.
+
+## 7. Open questions
 
 - Is a tray icon needed in v1? (Recommendation: no, add after feedback.)
-- Which notification channels are in the first release? ntfy and Telegram need
-  nothing but a topic/bot token; email needs SMTP details; WhatsApp is the
-  awkward one. (Recommendation: ntfy, Telegram, email first.)
 - Do we have, or want, a macOS developer account?
-- Project name and GitHub org, since they appear in release URLs and the site.
+- New GitHub repo URL, for release URLs and the site.

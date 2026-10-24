@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notlms</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #1b1f24; --muted: #667085; --line: #e3e6ea;
+    --accent: #2f6fed; --accent-text: #fff; --warn: #b42318; --warn-bg: #fdecea; --ok: #067647;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14161a; --card: #1d2026; --text: #e8eaed; --muted: #9aa3af; --line: #2c3038;
+            --accent: #6b9bff; --accent-text: #0b1220; --warn: #ff8a7a; --warn-bg: #3a1d1a; --ok: #4ade80; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.4rem; margin: 0; }
+  h2 { font-size: 1.05rem; margin: 0 0 8px; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 16px; }
+  label { display: block; font-size: .9rem; margin: 12px 0 4px; }
+  input[type=text], input[type=password], input[type=number] {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--text); font: inherit; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--card); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.danger { color: var(--warn); }
+  button:disabled { opacity: .6; cursor: default; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .task { display: flex; gap: 12px; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--line); }
+  .task:first-child { border-top: 0; }
+  .task a { color: var(--text); text-decoration: none; font-weight: 600; }
+  .task a:hover { text-decoration: underline; }
+  .badge { white-space: nowrap; font-size: .85rem; font-weight: 600; align-self: flex-start; padding: 2px 8px;
+           border-radius: 999px; border: 1px solid var(--line); }
+  .badge.overdue { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+  .error { color: var(--warn); background: var(--warn-bg); padding: 10px 12px; border-radius: 8px; margin-top: 16px; }
+  .ok { color: var(--ok); }
+  .privacy { border-left: 3px solid var(--accent); padding-left: 12px; margin-top: 16px; }
+  .chk { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  [hidden] { display: none !important; }
+  @media (max-width: 480px) { .task { flex-direction: column; gap: 4px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>notlms</h1>
+    <span class="muted" id="sync-line"></span>
+  </header>
+
+  <div id="error" class="error" hidden></div>
+
+  <section id="login-view" hidden>
+    <div class="card">
+      <h2>Connect to your LMS</h2>
+      <div class="privacy muted">
+        notlms runs only on this computer. There is no notlms server. Your password is sent
+        <strong>only to your LMS</strong> to get an access token, then thrown away. The token is
+        saved in a file on this computer and you can delete it any time with "Forget everything".
+        The code is open source and auditable.
+      </div>
+      <form id="login-form" autocomplete="off">
+        <label for="lms_url">LMS address</label>
+        <input type="text" id="lms_url" value="https://lms.nust.edu.pk">
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password">
+        <label for="section">Your section (optional, e.g. B)</label>
+        <input type="text" id="section" maxlength="8">
+        <div class="row"><button class="primary" type="submit" id="login-btn">Log in</button></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="app-view" hidden>
+    <div class="card">
+      <div class="row" style="margin-top:0; justify-content:space-between">
+        <h2 style="margin:0">Pending tasks</h2>
+        <button id="refresh-btn">Refresh now</button>
+      </div>
+      <div id="tasks"></div>
+    </div>
+
+    <div class="card">
+      <h2>Settings</h2>
+      <label for="s-section">Section</label>
+      <input type="text" id="s-section" maxlength="8">
+      <label for="s-hours">Remind me this many hours before the deadline (comma-separated)</label>
+      <input type="text" id="s-hours">
+      <label for="s-poll">Check the LMS every (minutes)</label>
+      <input type="number" id="s-poll" min="5" max="240">
+      <div class="chk"><input type="checkbox" id="s-desktop"><label for="s-desktop" style="margin:0">Show desktop notifications</label></div>
+      <div class="row">
+        <button class="primary" id="save-btn">Save</button>
+        <button id="test-btn">Send test notification</button>
+        <span id="settings-msg" class="muted"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Account</h2>
+      <p class="muted" id="account-line"></p>
+      <p class="muted">Reminders are only sent while notlms is running and this computer is awake.</p>
+      <button class="danger" id="logout-btn">Forget everything and log out</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let secret = "";
+  try {
+    if (location.hash.length > 1) sessionStorage.setItem("notlms", location.hash.slice(1));
+    secret = sessionStorage.getItem("notlms") || "";
+  } catch (_) { secret = location.hash.slice(1); }
+  history.replaceState(null, "", location.pathname);
+
+  async function api(path, body) {
+    const res = await fetch(path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: { "X-Notlms-Token": secret, "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(res.status === 401 ? "This page is out of date. Open the link printed by notlms again." : (data.error || res.statusText));
+    return data;
+  }
+
+  function showError(msg) { $("error").textContent = msg || ""; $("error").hidden = !msg; }
+
+  let settingsFilled = false;
+  function render(s) {
+    $("login-view").hidden = s.logged_in;
+    $("app-view").hidden = !s.logged_in;
+    showError(s.error || (s.notify_error ? "Desktop notifications failed: " + s.notify_error : ""));
+    if (!s.logged_in) { $("sync-line").textContent = ""; settingsFilled = false; return; }
+
+    $("sync-line").textContent = s.syncing ? "Syncing..." :
+      s.synced_at ? "Last synced " + new Date(s.synced_at * 1000).toLocaleTimeString() : "Not synced yet";
+    $("account-line").textContent = "Signed in as " + s.username + " on " + s.lms_url;
+
+    const box = $("tasks");
+    box.replaceChildren();
+    if (!s.synced_at && !s.error) { box.textContent = "Loading..."; }
+    else if (!s.tasks.length && s.synced_at) {
+      const p = document.createElement("p"); p.className = "ok"; p.textContent = "Nothing pending. You're all caught up."; box.append(p);
+    }
+    for (const t of s.tasks) {
+      const row = document.createElement("div"); row.className = "task";
+      const left = document.createElement("div");
+      const a = document.createElement("a"); a.href = t.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = t.name;
+      const meta = document.createElement("div"); meta.className = "muted"; meta.textContent = t.course + " · due " + t.due_text;
+      left.append(a, meta);
+      const badge = document.createElement("span"); badge.className = "badge" + (t.overdue ? " overdue" : ""); badge.textContent = t.left_text;
+      row.append(left, badge); box.append(row);
+    }
+
+    if (!settingsFilled) {
+      $("s-section").value = s.settings.section;
+      $("s-hours").value = s.settings.remind_hours.join(", ");
+      $("s-poll").value = s.settings.poll_minutes;
+      $("s-desktop").checked = s.settings.desktop_notifications;
+      settingsFilled = true;
+    }
+  }
+
+  async function refresh() {
+    try { render(await api("/api/status")); }
+    catch (e) { showError(e.message); }
+  }
+
+  $("login-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const btn = $("login-btn"); btn.disabled = true; btn.textContent = "Logging in...";
+    try {
+      await api("/api/login", { lms_url: $("lms_url").value, username: $("username").value,
+                                 password: $("password").value, section: $("section").value });
+      $("password").value = "";
+      showError("");
+      await refresh();
+    } catch (e) { showError(e.message); }
+    btn.disabled = false; btn.textContent = "Log in";
+  });
+
+  $("refresh-btn").addEventListener("click", async () => { await api("/api/sync", {}).catch((e) => showError(e.message)); setTimeout(refresh, 800); });
+
+  $("save-btn").addEventListener("click", async () => {
+    const hours = $("s-hours").value.split(",").map((x) => parseInt(x, 10)).filter((x) => x > 0);
+    try {
+      await api("/api/settings", { section: $("s-section").value, remind_hours: hours,
+        poll_minutes: parseInt($("s-poll").value, 10) || 30, desktop_notifications: $("s-desktop").checked });
+      $("settings-msg").textContent = "Saved."; setTimeout(() => ($("settings-msg").textContent = ""), 2500);
+      setTimeout(refresh, 800);
+    } catch (e) { showError(e.message); }
+  });
+
+  $("test-btn").addEventListener("click", async () => {
+    try { await api("/api/test-notification", {}); showError(""); $("settings-msg").textContent = "Sent. Check your desktop."; }
+    catch (e) { showError(e.message); }
+  });
+
+  $("logout-btn").addEventListener("click", async () => {
+    if (!confirm("Delete your saved login and settings from this computer?")) return;
+    await api("/api/logout", {}).catch((e) => showError(e.message));
+    await refresh();
+  });
+
+  refresh();
+  setInterval(refresh, 15000);
+})();
+</script>
+</body>
+</html>

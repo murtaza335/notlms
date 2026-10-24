@@ -1,6 +1,6 @@
 import unittest
 
-from lms_notifier.moodle import _flatten
+from notlms.moodle import _flatten
 
 
 class FlattenTest(unittest.TestCase):

@@ -1,9 +1,8 @@
-"""Render reminders as human-readable text."""
+"""Render tasks and reminders as human-readable text (times in the local zone)."""
 
 from __future__ import annotations
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from .reminders import OVERDUE, Reminder
 from .tasks import Task
@@ -28,19 +27,21 @@ def short_course(course: str) -> str:
     return "-".join(parts[:2]) if len(parts) >= 2 else head
 
 
-def format_task_line(task: Task, now: float, tz: ZoneInfo) -> str:
-    due = datetime.fromtimestamp(task.due, tz).strftime("%a %d %b %H:%M")
+def time_left(task: Task, now: float) -> str:
     left = task.due - now
-    when = f"OVERDUE by {humanize_delta(left)}" if left <= 0 else f"{humanize_delta(left)} left"
-    return f"[{when}] {short_course(task.course)} - {task.name}\n  Due {due} - {task.url}"
+    return f"overdue by {humanize_delta(left)}" if left <= 0 else f"{humanize_delta(left)} left"
 
 
-def format_digest(reminders: list[Reminder], now: float, tz: ZoneInfo) -> tuple[str, str]:
+def format_due(task: Task) -> str:
+    return datetime.fromtimestamp(task.due).astimezone().strftime("%a %d %b %H:%M")
+
+
+def format_digest(reminders: list[Reminder], now: float) -> tuple[str, str]:
     """Return (title, body) for one notification covering all reminders."""
     overdue = sum(1 for r in reminders if r.stage == OVERDUE)
     count = len(reminders)
-    title = f"LMS: {count} pending task{'s' if count != 1 else ''}"
+    title = f"notlms: {count} pending task{'s' if count != 1 else ''}"
     if overdue:
         title += f" ({overdue} overdue)"
-    body = "\n\n".join(format_task_line(r.task, now, tz) for r in reminders)
-    return title, body
+    lines = [f"{short_course(r.task.course)} {r.task.name} ({time_left(r.task, now)})" for r in reminders]
+    return title, "\n".join(lines)

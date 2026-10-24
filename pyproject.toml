@@ -3,15 +3,18 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lms-notifier"
+name = "notlms"
 version = "0.1.0"
-description = "Watches a Moodle LMS for pending submissions and sends reminders."
+description = "Local, private reminder dashboard for Moodle LMS deadlines."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
 
 [project.scripts]
-lms-notifier = "lms_notifier.cli:main"
+notlms = "notlms.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["lms_notifier*"]
+include = ["notlms*"]
+
+[tool.setuptools.package-data]
+notlms = ["ui/*.html"]

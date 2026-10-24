@@ -1,9 +1,0 @@
-[Unit]
-Description=Check NUST LMS for pending submissions and send reminders
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-Type=oneshot
-WorkingDirectory=%h/fun-projects/lms-notification-sender
-ExecStart=/usr/bin/python3 -m lms_notifier run

@@ -1,6 +1,6 @@
 import unittest
 
-from lms_notifier.sections import detect_section, is_for_section
+from notlms.sections import detect_section, is_for_section
 
 
 class DetectSectionTest(unittest.TestCase):
